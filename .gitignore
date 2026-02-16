@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+backend/.venv/
+backend/.env
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# OS
+.DS_Store
+
+# Lock files (optional -- keep uv.lock, ignore node lock)
