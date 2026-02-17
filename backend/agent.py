@@ -27,8 +27,17 @@ Based on the content of the transcript, decide which tool(s) to call:
 3. **create_report** — Use when the transcript is a general meeting discussion. Summarize it 
    into a structured report with key points and action items.
 
-You may call MULTIPLE tools if appropriate. For example, a meeting might warrant both a report 
-AND a calendar invite for a follow-up.
+4. **create_email_summary** — Use when the meeting warrants sending notes to attendees. Generate
+   a professional email with subject line and body summarizing the meeting.
+
+5. **create_action_items** — Use when the transcript contains tasks, assignments, or follow-ups.
+   Extract each action item with its assignee, deadline, and priority (high/medium/low).
+
+6. **analyze_sentiment** — Always call this tool to analyze the overall tone and productivity of
+   the meeting. Detect any conflicts or tensions and rate productivity 1-10.
+
+You may call MULTIPLE tools if appropriate. For example, a meeting might warrant a report, 
+action items, an email summary, AND a sentiment analysis.
 
 Always extract as much relevant detail from the transcript as possible. Use ISO 8601 format for 
 dates/times (e.g. 2026-02-20T14:00:00). If a date/time is not explicitly stated, make a 
@@ -149,6 +158,122 @@ TOOLS_SCHEMA = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_email_summary",
+            "description": "Create a professional email summary of the meeting for attendees",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "subject": {
+                        "type": "string",
+                        "description": "Email subject line",
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "Email body text summarizing the meeting",
+                    },
+                    "attendees": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of attendee names or emails",
+                    },
+                    "date": {
+                        "type": "string",
+                        "description": "Date of the meeting",
+                    },
+                },
+                "required": ["subject", "body"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_action_items",
+            "description": "Extract and structure action items from the meeting with assignees, deadlines, and priority",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "task": {
+                                    "type": "string",
+                                    "description": "Description of the action item",
+                                },
+                                "assignee": {
+                                    "type": "string",
+                                    "description": "Person responsible",
+                                },
+                                "deadline": {
+                                    "type": "string",
+                                    "description": "Due date or TBD",
+                                },
+                                "priority": {
+                                    "type": "string",
+                                    "enum": ["high", "medium", "low"],
+                                    "description": "Priority level",
+                                },
+                            },
+                            "required": ["task"],
+                        },
+                        "description": "List of action items",
+                    },
+                    "meeting_title": {
+                        "type": "string",
+                        "description": "Title of the meeting",
+                    },
+                    "date": {
+                        "type": "string",
+                        "description": "Date of the meeting",
+                    },
+                },
+                "required": ["items"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_sentiment",
+            "description": "Analyze the overall tone, productivity, and any conflicts in the meeting",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "overall_tone": {
+                        "type": "string",
+                        "description": "Overall tone: productive, tense, casual, mixed, positive, negative, neutral",
+                    },
+                    "tone_details": {
+                        "type": "string",
+                        "description": "Brief explanation of the meeting tone",
+                    },
+                    "conflict_detected": {
+                        "type": "boolean",
+                        "description": "Whether tension or disagreement was detected",
+                    },
+                    "conflict_details": {
+                        "type": "string",
+                        "description": "Description of any conflict detected",
+                    },
+                    "key_emotions": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of emotions observed (e.g. enthusiasm, frustration, agreement)",
+                    },
+                    "productivity_score": {
+                        "type": "integer",
+                        "description": "Productivity rating from 1 (unproductive) to 10 (highly productive)",
+                    },
+                },
+                "required": ["overall_tone", "tone_details"],
+            },
+        },
+    },
 ]
 
 
@@ -156,6 +281,9 @@ TOOL_TAGS = {
     "create_calendar_invite": "calendar",
     "create_decision_record": "decision",
     "create_report": "report",
+    "create_email_summary": "email",
+    "create_action_items": "actions",
+    "analyze_sentiment": "sentiment",
 }
 
 SEPARATOR = "═" * 60

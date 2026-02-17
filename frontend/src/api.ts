@@ -1,9 +1,26 @@
 export interface AgentEvent {
-  type: "thinking" | "tool_call" | "tool_result" | "final" | "error";
+  type: "thinking" | "tool_call" | "tool_result" | "final" | "meeting_saved" | "error";
   content?: string;
   tool?: string;
   arguments?: Record<string, unknown>;
   result?: Record<string, unknown>;
+  meeting_id?: number;
+}
+
+export interface MeetingSummary {
+  id: number;
+  title: string;
+  summary: string;
+  created_at: string;
+}
+
+export interface MeetingFull {
+  id: number;
+  title: string;
+  transcript: string;
+  results: Record<string, unknown>[];
+  summary: string;
+  created_at: string;
 }
 
 export async function transcribeAudio(
@@ -61,21 +78,37 @@ export async function analyzeTranscript(
           const event: AgentEvent = JSON.parse(line.slice(6));
           onEvent(event);
         } catch {
-          // skip malformed lines
         }
       }
     }
   }
 
-  // process any remaining buffer
   if (buffer.startsWith("data: ")) {
     try {
       const event: AgentEvent = JSON.parse(buffer.slice(6));
       onEvent(event);
     } catch {
-      // skip
     }
   }
+}
+
+export async function fetchMeetings(search?: string): Promise<MeetingSummary[]> {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  const res = await fetch(`/api/meetings?${params.toString()}`);
+  if (!res.ok) throw new Error("Failed to fetch meetings");
+  return res.json();
+}
+
+export async function fetchMeeting(id: number): Promise<MeetingFull> {
+  const res = await fetch(`/api/meetings/${id}`);
+  if (!res.ok) throw new Error("Meeting not found");
+  return res.json();
+}
+
+export async function deleteMeeting(id: number): Promise<void> {
+  const res = await fetch(`/api/meetings/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to delete meeting");
 }
 
 export function downloadICS(icsContent: string, filename: string = "invite.ics") {
@@ -100,4 +133,20 @@ export function downloadMarkdown(markdown: string, filename: string = "document.
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+export function downloadCSV(csv: string, filename: string = "data.csv") {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export function copyToClipboard(text: string): Promise<void> {
+  return navigator.clipboard.writeText(text);
 }
