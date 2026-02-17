@@ -12,4 +12,7 @@ frontend/dist/
 # OS
 .DS_Store
 
+# IDE
+.cursor/
+
 # Lock files (optional -- keep uv.lock, ignore node lock)
